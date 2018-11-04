@@ -3,6 +3,7 @@ import numpy as np #is a standard to use this alias for NumPy package
 import os
 import tkinter as tk
 import tkinter.filedialog
+import tkinter.font
 
 from tkinter import *
 from matplotlib import pyplot as plt
@@ -16,11 +17,12 @@ aplicacion = tk.Tk()
 var = StringVar() 
 varModality = StringVar()
 varStudy = StringVar()
+varProtocol = StringVar()
 
 #FRAME CONFIGURATION
 #aplicacion.geometry("600x500")
 title = 'pydicom image'
-back = tk.Frame(master=aplicacion,bg='#28abdc')
+back = tk.Frame(master=aplicacion,bg='#177497')
 back.master.title(title)
 back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
 back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
@@ -83,17 +85,6 @@ def openfile():
 
     print(ds.pixel_array) 
     print(ds.pixel_array.shape)# ds.pixel_array.shape returns the shape of a NumPy ndarray
-    '''
-    plt.figure(dpi=300)
-    plt.axes().set_aspect('equal')
-    plt.set_cmap(plt.gray())
-
-    #If you are using MAMMOGRAPHY_PRESENTATION.dcm or MAMMOGRAPHY_RAW.dcm use
-    plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]).T)
-    #else, use the line below
-    #plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]))
-    '''
-    #plt.imshow(np.flipud(ArrayDicom[:, :, 0]))
 
     #variables with information about the dcm file
     var.set(ds.pixel_array.shape)  
@@ -101,61 +92,66 @@ def openfile():
     varModality.set(modality.value)
     study = ds.data_element("StudyDescription")  
     varStudy.set(study.value)
+    protocol = ds.data_element("ProtocolName")  
+    varProtocol.set(protocol.value)
     #labels for the info
-    aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels):", font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.infolbl.grid(row=1, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
-    aplicacion.dimensionlbl = tk.Label(master=back, textvariable=var, font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.dimensionlbl.grid(row=2, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels):", font=('Ubuntu', 12), bg='#177497')
+    aplicacion.infolbl.grid(row=1, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.dimensionlbl = tk.Label(master=back, textvariable=var, font=('Ubuntu', 12), bg='#177497')
+    aplicacion.dimensionlbl.grid(row=2, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
-    aplicacion.infomlbl = tk.Label(master=back, text="Modality:", font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.infomlbl.grid(row=3, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
-    aplicacion.modalitylbl = tk.Label(master=back, textvariable=varModality, font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.modalitylbl.grid(row=4, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.infomlbl = tk.Label(master=back, text="Modality:", font=("Ubuntu", 12), bg='#177497')
+    aplicacion.infomlbl.grid(row=3, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.modalitylbl = tk.Label(master=back, textvariable=varModality, font=("Ubuntu", 12), bg='#177497')
+    aplicacion.modalitylbl.grid(row=4, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
-    aplicacion.infoslbl = tk.Label(master=back, text="Study description:", font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.infoslbl.grid(row=5, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
-    aplicacion.studylbl = tk.Label(master=back, textvariable=varStudy, font=("Helvetica", 12), bg='#28abdc')
-    aplicacion.studylbl.grid(row=6, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.infoslbl = tk.Label(master=back, text="Study description:", font=("Ubuntu", 12), bg='#177497')
+    aplicacion.infoslbl.grid(row=5, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.studylbl = tk.Label(master=back, textvariable=varStudy, font=("Ubuntu", 12), bg='#177497')
+    aplicacion.studylbl.grid(row=6, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+
+    aplicacion.infoplbl = tk.Label(master=back, text="Protocol Name:", font=("Ubuntu", 12), bg='#177497')
+    aplicacion.infoplbl.grid(row=7, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.protocollbl = tk.Label(master=back, textvariable=varProtocol, font=("Ubuntu", 12), bg='#177497')
+    aplicacion.protocollbl.grid(row=8, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+
+    #show the image
+    plt.figure(dpi=300)
+    plt.axes().set_aspect('equal')
+    plt.set_cmap(plt.gray())
+    '''
+    #If you are using MAMMOGRAPHY_PRESENTATION.dcm or MAMMOGRAPHY_RAW.dcm use
+    plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]).T)
+    #else, use the line below
+    #plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]))
+    '''
+    plt.imshow(np.flipud(ArrayDicom[:, :, 0]))
+    plt.show()
+
+    histogram()
 
 #label 
 img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
 #aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
 #aplicacion.imagenlbl.pack(side="top")       
 
-def show_image(data, block=True, master=None):
-    '''
-    Get minimal Tkinter GUI and display a pydicom data.pixel_array
-    data: object returned from pydicom.read_file()
-    block: if True run Tk mainloop() to show the image
-    master: use with block==False and an existing
-    Tk widget as parent widget
-    side effects: may leave a temporary .pgm file on disk
-    '''
-    '''
-    photo_image = get_tkinter_photoimage_from_pydicom_image(data)
-    label = tkinter.Label(frame, image=photo_image, background='#000')
-
-    # keep a reference to avoid disappearance upon garbage collection
-    label.photo_reference = photo_image
-    label.grid()
-    frame.grid()
-'''
-    if block:
-        back.mainloop()
+#histogram
+def histogram():
+    print("histogram")
 
 #basics window interface
 #label title
-aplicacion.titulolbl = tk.Label(master=back, text="Medical Images", anchor="center", font=("Helvetica", 28), bg='#28abdc')
+aplicacion.titulolbl = tk.Label(master=back, text="Medical Images", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 #label for the image
-aplicacion.imagenlbl = tk.Label(master=back, text="Imagen aqui", font=("Helvetica", 28), bg='white')
+aplicacion.imagenlbl = tk.Label(master=back, bg='white')
 aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 #button to open the image
-aplicacion.abrirbtn = tk.Button(master=back, text="Abrir imagen", command=openfile)
+aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
 aplicacion.abrirbtn.grid(row=3, column=0, pady=5)
 #button to close the app
-aplicacion.quit = tk.Button(master=back, text="Salir", fg="red", command=aplicacion.destroy)
+aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
 aplicacion.quit.grid(row=3, column=1, pady=5)
 
