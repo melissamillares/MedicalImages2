@@ -17,25 +17,33 @@ var = StringVar()
 varModality = StringVar()
 varStudy = StringVar()
 
+#FRAME CONFIGURATION
+#aplicacion.geometry("600x500")
+title = 'pydicom image'
+back = tk.Frame(master=aplicacion,bg='#28abdc')
+back.master.title(title)
+back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
+back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
+
 #function to choose the image 
 def openfile():   
-    archivo = tk.filedialog.askdirectory()#askopenfile()  
-    print(archivo)    
-    #var.set(ds.pixel_array.shape)    
-    #varModality.set(RefDs)        
-    PathDicom = archivo    
-    lstFilesDCM = []  # create an empty list
-    for dirName, subdirList, fileList in os.walk(PathDicom):
-        for filename in fileList:
-            if ".dcm" in filename.lower():  # check whether the file's DICOM
-                lstFilesDCM.append(os.path.join(dirName,filename))
-            
+    archivo = tk.filedialog.askopenfile() #askdirectory()    
+    dcmfile = archivo.name   
+    print(dcmfile)         
+    #PathDicom = archivo   
+    #lstFilesDCM = []  # create an empty list
+    #for dirName, subdirList, fileList in os.walk(PathDicom):
+    #    for filename in fileList:
+    #        if ".dcm" in filename.lower():  # check whether the file's DICOM
+    #            lstFilesDCM.append(os.path.join(dirName,filename))           
     #Lets check what we have in the list
-    print(lstFilesDCM)
+    #print(lstFilesDCM)
+
     # Get ref file
-    RefDs = pydicom.dcmread(lstFilesDCM[0])
+    RefDs = pydicom.dcmread(dcmfile)#lstFilesDCM[0]
     # Load dimensions based on the number of rows, columns, and slices (along the Z axis)
-    ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), len(lstFilesDCM))
+    #ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), len(lstFilesDCM))
+    ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), 1)
 
     # Load spacing values (in mm)
     try:
@@ -62,11 +70,16 @@ def openfile():
     ArrayDicom = np.zeros(ConstPixelDims, dtype=RefDs.pixel_array.dtype)
 
     # loop through all the DICOM files
-    for filenameDCM in lstFilesDCM:
+    #for filenameDCM in lstFilesDCM:
         # read the file
-        ds = pydicom.dcmread(filenameDCM)
+        #ds = pydicom.dcmread(filenameDCM)
         # store the raw image data
-        ArrayDicom[:, :, lstFilesDCM.index(filenameDCM)] = ds.pixel_array
+        #ArrayDicom[:, :, lstFilesDCM.index(filenameDCM)] = ds.pixel_array
+    # read the file
+    ds = pydicom.dcmread(dcmfile)
+    print(ds)
+    # store the raw image data
+    ArrayDicom[:, :, 0] = ds.pixel_array
 
     print(ds.pixel_array) 
     print(ds.pixel_array.shape)# ds.pixel_array.shape returns the shape of a NumPy ndarray
@@ -80,41 +93,34 @@ def openfile():
     #else, use the line below
     #plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]))
     '''
-    plt.imshow(np.flipud(ArrayDicom[:, :, 0]))
+    #plt.imshow(np.flipud(ArrayDicom[:, :, 0]))
 
-'''
-Interfaz
-''' 
-#aplicacion.geometry("600x500")
-title = 'pydicom image'
-back = tk.Frame(master=aplicacion,bg='#28abdc')
-back.master.title(title)
-back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
-back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
-
-#label 
-img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
-#aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
-#aplicacion.imagenlbl.pack(side="top")
-
-def funcion():
-    #labels de info
-    aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels)", font=("Helvetica", 12), bg='#28abdc')
+    #variables with information about the dcm file
+    var.set(ds.pixel_array.shape)  
+    modality = ds.data_element("Modality")  
+    varModality.set(modality.value)
+    study = ds.data_element("StudyDescription")  
+    varStudy.set(study.value)
+    #labels for the info
+    aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels):", font=("Helvetica", 12), bg='#28abdc')
     aplicacion.infolbl.grid(row=1, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
     aplicacion.dimensionlbl = tk.Label(master=back, textvariable=var, font=("Helvetica", 12), bg='#28abdc')
     aplicacion.dimensionlbl.grid(row=2, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
-    aplicacion.infomlbl = tk.Label(master=back, text="Modality", font=("Helvetica", 12), bg='#28abdc')
+    aplicacion.infomlbl = tk.Label(master=back, text="Modality:", font=("Helvetica", 12), bg='#28abdc')
     aplicacion.infomlbl.grid(row=3, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
     aplicacion.modalitylbl = tk.Label(master=back, textvariable=varModality, font=("Helvetica", 12), bg='#28abdc')
     aplicacion.modalitylbl.grid(row=4, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
-    aplicacion.infoslbl = tk.Label(master=back, text="Study description", font=("Helvetica", 12), bg='#28abdc')
+    aplicacion.infoslbl = tk.Label(master=back, text="Study description:", font=("Helvetica", 12), bg='#28abdc')
     aplicacion.infoslbl.grid(row=5, column=2, columnspan=2, rowspan=2, padx=10, pady=10)
     aplicacion.studylbl = tk.Label(master=back, textvariable=varStudy, font=("Helvetica", 12), bg='#28abdc')
     aplicacion.studylbl.grid(row=6, column=2, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
-    #aplicacion.imagenlbl = tk.Label(master=back, image=img)
-    #aplicacion.imagenlbl.pack()             
+
+#label 
+img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
+#aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
+#aplicacion.imagenlbl.pack(side="top")       
 
 def show_image(data, block=True, master=None):
     '''
@@ -137,17 +143,18 @@ def show_image(data, block=True, master=None):
     if block:
         back.mainloop()
 
-#label de titulo
+#basics window interface
+#label title
 aplicacion.titulolbl = tk.Label(master=back, text="Medical Images", anchor="center", font=("Helvetica", 28), bg='#28abdc')
 aplicacion.titulolbl.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
-#label para poner imagen
+#label for the image
 aplicacion.imagenlbl = tk.Label(master=back, text="Imagen aqui", font=("Helvetica", 28), bg='white')
 aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
-#boton para abrir la imagen
+#button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Abrir imagen", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
 aplicacion.abrirbtn.grid(row=3, column=0, pady=5)
-#boton para cerrar la app
+#button to close the app
 aplicacion.quit = tk.Button(master=back, text="Salir", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
 aplicacion.quit.grid(row=3, column=1, pady=5)
