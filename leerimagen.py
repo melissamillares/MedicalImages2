@@ -32,14 +32,6 @@ def openfile():
     archivo = tk.filedialog.askopenfile() #askdirectory()    
     dcmfile = archivo.name   
     print(dcmfile)         
-    #PathDicom = archivo   
-    #lstFilesDCM = []  # create an empty list
-    #for dirName, subdirList, fileList in os.walk(PathDicom):
-    #    for filename in fileList:
-    #        if ".dcm" in filename.lower():  # check whether the file's DICOM
-    #            lstFilesDCM.append(os.path.join(dirName,filename))           
-    #Lets check what we have in the list
-    #print(lstFilesDCM)
 
     # Get ref file
     RefDs = pydicom.dcmread(dcmfile)#lstFilesDCM[0]
@@ -57,32 +49,20 @@ def openfile():
     #print(RefDs)
     #print(ConstPixelDims)
     #print(ConstPixelSpacing)
-
-    #Create the array staring from 0, to ConstPixelDims[0]+1 (because stop is an open interval) 
-    #and the ConstPixelSpacing gives the scale to the volume. 
-    #If ConstPixelSpacing == 1, then values go to ConstPixelDims[0]+1. It creates a cube.
     x = np.arange(0.0, (ConstPixelDims[0]+1)*ConstPixelSpacing[0], ConstPixelSpacing[0])
     y = np.arange(0.0, (ConstPixelDims[1]+1)*ConstPixelSpacing[1], ConstPixelSpacing[1])
     z = np.arange(0.0, (ConstPixelDims[2]+1)*ConstPixelSpacing[2], ConstPixelSpacing[2])
 
     half = int(np.round(x.shape[0] / 2))
-    #print(x[:half]) #print half the values. Starting from index 0 to half-1
-
+    
     # The array is sized based on 'ConstPixelDims'
     ArrayDicom = np.zeros(ConstPixelDims, dtype=RefDs.pixel_array.dtype)
 
-    # loop through all the DICOM files
-    #for filenameDCM in lstFilesDCM:
-        # read the file
-        #ds = pydicom.dcmread(filenameDCM)
-        # store the raw image data
-        #ArrayDicom[:, :, lstFilesDCM.index(filenameDCM)] = ds.pixel_array
-    # read the file
     ds = pydicom.dcmread(dcmfile)
-    print(ds)
+    #print(ds)
     # store the raw image data
     ArrayDicom[:, :, 0] = ds.pixel_array
-
+    print(ds)
     print(ds.pixel_array) 
     print(ds.pixel_array.shape)# ds.pixel_array.shape returns the shape of a NumPy ndarray
 
@@ -115,6 +95,14 @@ def openfile():
     aplicacion.protocollbl = tk.Label(master=back, textvariable=varProtocol, font=("Ubuntu", 12), bg='#177497')
     aplicacion.protocollbl.grid(row=8, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
+    img = np.flipud(ArrayDicom[:, :, 0])
+
+    #histogram    
+    hist,bins = np.histogram(img,256,[0,256])
+    plt.hist(img.ravel(),256,[0,256])
+    plt.title('Histogram')
+    plt.show()
+
     #show the image
     plt.figure(dpi=300)
     plt.axes().set_aspect('equal')
@@ -125,25 +113,19 @@ def openfile():
     #else, use the line below
     #plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]))
     '''
-    plt.imshow(np.flipud(ArrayDicom[:, :, 0]))
+    plt.imshow(img)
     plt.show()
-
-    histogram()
 
 #label 
 img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
 #aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
 #aplicacion.imagenlbl.pack(side="top")       
 
-#histogram
-def histogram():
-    print("histogram")
-
 #basics window interface
 #label title
-aplicacion.titulolbl = tk.Label(master=back, text="Medical Images", anchor="center", font=("Ubuntu", 28), bg='#177497')
+aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGES", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
-#label for the image
+#label for the histogram
 aplicacion.imagenlbl = tk.Label(master=back, bg='white')
 aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 #button to open the image
