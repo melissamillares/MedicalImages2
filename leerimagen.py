@@ -76,24 +76,24 @@ def openfile():
     varProtocol.set(protocol.value)
     #labels for the info
     aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels):", font=('Ubuntu', 12), bg='#177497')
-    aplicacion.infolbl.grid(row=1, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.infolbl.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
     aplicacion.dimensionlbl = tk.Label(master=back, textvariable=var, font=('Ubuntu', 12), bg='#177497')
-    aplicacion.dimensionlbl.grid(row=2, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.dimensionlbl.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
     aplicacion.infomlbl = tk.Label(master=back, text="Modality:", font=("Ubuntu", 12), bg='#177497')
-    aplicacion.infomlbl.grid(row=3, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.infomlbl.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
     aplicacion.modalitylbl = tk.Label(master=back, textvariable=varModality, font=("Ubuntu", 12), bg='#177497')
-    aplicacion.modalitylbl.grid(row=4, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.modalitylbl.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
     aplicacion.infoslbl = tk.Label(master=back, text="Study description:", font=("Ubuntu", 12), bg='#177497')
-    aplicacion.infoslbl.grid(row=5, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.infoslbl.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
     aplicacion.studylbl = tk.Label(master=back, textvariable=varStudy, font=("Ubuntu", 12), bg='#177497')
-    aplicacion.studylbl.grid(row=6, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.studylbl.grid(row=8, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
     aplicacion.infoplbl = tk.Label(master=back, text="Protocol Name:", font=("Ubuntu", 12), bg='#177497')
-    aplicacion.infoplbl.grid(row=7, column=2, columnspan=2, padx=10, pady=10)
+    aplicacion.infoplbl.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
     aplicacion.protocollbl = tk.Label(master=back, textvariable=varProtocol, font=("Ubuntu", 12), bg='#177497')
-    aplicacion.protocollbl.grid(row=8, column=2, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
+    aplicacion.protocollbl.grid(row=10, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
     img = np.flipud(ArrayDicom[:, :, 0])
 
@@ -117,7 +117,7 @@ def openfile():
     plt.show()
 
 #label 
-img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
+img = PhotoImage(file='/home/melissa/Imágenes/medical2.png')
 #aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
 #aplicacion.imagenlbl.pack(side="top")       
 
@@ -126,15 +126,15 @@ img = PhotoImage(file='/home/melissa/Imágenes/Captura.png')
 aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGES", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 #label for the histogram
-aplicacion.imagenlbl = tk.Label(master=back, bg='white')
+aplicacion.imagenlbl = tk.Label(master=back, image=img)
 aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 #button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
-aplicacion.abrirbtn.grid(row=3, column=0, pady=5)
+aplicacion.abrirbtn.grid(row=11, column=0, pady=5)
 #button to close the app
 aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
-aplicacion.quit.grid(row=3, column=1, pady=5)
+aplicacion.quit.grid(row=11, column=1, pady=5)
 
 aplicacion.mainloop()
