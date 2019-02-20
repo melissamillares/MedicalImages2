@@ -4,28 +4,20 @@ import os
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.font
+import matplotlib.image as mpimg
 
 from tkinter import *
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 aplicacion = tk.Tk()
-
-#The following line used to display the results of the images in the notebook
-#%matplotlib inline 
 
 #variables to save info about the dcm file
 var = StringVar() 
 varModality = StringVar()
 varStudy = StringVar()
 varProtocol = StringVar()
-
-#FRAME CONFIGURATION
-#aplicacion.geometry("600x500")
-title = 'pydicom image'
-back = tk.Frame(master=aplicacion,bg='#177497')
-back.master.title(title)
-back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
-back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
 
 #function to choose the image 
 def openfile():   
@@ -66,13 +58,33 @@ def openfile():
     print(ds.pixel_array) 
     print(ds.pixel_array.shape)# ds.pixel_array.shape returns the shape of a NumPy ndarray
 
+    setInfo(ds)
+    image(ds)
+    
+    img = np.flipud(ArrayDicom[:, :, 0])
+
+    #histogram    
+    hist,bins = np.histogram(img,256,[0,256])
+    plt.hist(img.ravel(),256,[0,256])
+    plt.title('Histogram')
+    plt.show()
+
+def image(file):      
+    plt.set_cmap(plt.gray()) 
+    imag = fig.add_subplot(111)    
+    imag.imshow(np.flipud(file.pixel_array))             
+    canvas.draw()    
+    canvas.get_tk_widget().pack()      
+    aplicacion.canvas.grid(row=2, column=1)
+
+def setInfo(header):
     #variables with information about the dcm file
-    var.set(ds.pixel_array.shape)  
-    modality = ds.data_element("Modality")  
+    var.set(header.pixel_array.shape)  
+    modality = header.data_element("Modality")  
     varModality.set(modality.value)
-    study = ds.data_element("StudyDescription")  
+    study = header.data_element("StudyDescription")  
     varStudy.set(study.value)
-    protocol = ds.data_element("ProtocolName")  
+    protocol = header.data_element("ProtocolName")  
     varProtocol.set(protocol.value)
     #labels for the info
     aplicacion.infolbl = tk.Label(master=back, text="Dimension (pixels):", font=('Ubuntu', 12), bg='#177497')
@@ -95,33 +107,20 @@ def openfile():
     aplicacion.protocollbl = tk.Label(master=back, textvariable=varProtocol, font=("Ubuntu", 12), bg='#177497')
     aplicacion.protocollbl.grid(row=10, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
 
-    img = np.flipud(ArrayDicom[:, :, 0])
+'''
+def convolution(imagen, kernel)
+    
+'''
 
-    #histogram    
-    hist,bins = np.histogram(img,256,[0,256])
-    plt.hist(img.ravel(),256,[0,256])
-    plt.title('Histogram')
-    plt.show()
+#Basics window interface
+#FRAME CONFIGURATION
+title = 'pydicom image'
+back = tk.Frame(master=aplicacion,bg='#177497')
+back.master.title(title)
+back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
+back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
 
-    #show the image
-    plt.figure(dpi=300)
-    plt.axes().set_aspect('equal')
-    plt.set_cmap(plt.gray())
-    '''
-    #If you are using MAMMOGRAPHY_PRESENTATION.dcm or MAMMOGRAPHY_RAW.dcm use
-    plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]).T)
-    #else, use the line below
-    #plt.pcolormesh(x, y, np.flipud(ArrayDicom[:, :, 0]))
-    '''
-    plt.imshow(img)
-    plt.show()
-
-#label 
-img = PhotoImage(file='/home/melissa/Imágenes/medical2.png')
-#aplicacion.imagenlbl = tk.Label(master=back, textvariable=var, bg='white', font=("Helvetica", 20))
-#aplicacion.imagenlbl.pack(side="top")       
-
-#basics window interface
+img = PhotoImage(file='./medical2.png')   
 #label title
 aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGES", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=(N, S, E, W))
@@ -136,5 +135,8 @@ aplicacion.abrirbtn.grid(row=11, column=0, pady=5)
 aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
 aplicacion.quit.grid(row=11, column=1, pady=5)
+
+fig = Figure()
+canvas = FigureCanvasTkAgg(fig, master=aplicacion)
 
 aplicacion.mainloop()
