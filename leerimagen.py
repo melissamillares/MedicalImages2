@@ -5,8 +5,10 @@ import tkinter as tk
 import tkinter.filedialog
 import tkinter.font
 import matplotlib.image as mpimg
+import Gaussian
 
 from tkinter import *
+from tkinter import ttk 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -22,7 +24,10 @@ text.pack(side=LEFT, padx=20, pady=10)
 fig = Figure()
 canvas = FigureCanvasTkAgg(fig, master=aplicacion)
 
-title = 'pydicom image'
+gaussian_kernel = Gaussian.get_gaussian_filter()
+rayleigh_kernel = Gaussian.get_rayleigh_filter()
+
+title = 'medical image processing'
 back = tk.Frame(master=aplicacion,bg='#177497')
 back.master.title(title)
 back.pack_propagate(0) #Don't allow the widgets inside to determine the frame's width / height
@@ -30,8 +35,8 @@ back.pack(fill=tk.BOTH, expand=1) #Expand the frame to fill the root window
 
 img = PhotoImage(file='./medical2.png')   
 #label title
-aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGES", anchor="center", font=("Ubuntu", 28), bg='#177497')
-aplicacion.titulolbl.place(x=190, y=10)
+aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGE PROCESSING", anchor="center", font=("Ubuntu", 28), bg='#177497')
+aplicacion.titulolbl.place(x=80, y=10)
 #label
 #aplicacion.imagenlbl = tk.Label(master=back, image=img)
 #aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
@@ -39,33 +44,18 @@ aplicacion.titulolbl.place(x=190, y=10)
 #function to choose the image 
 def openfile():   
     archivo = tk.filedialog.askopenfile() #askdirectory()    
-    dcmfile = archivo.name   
-    print(dcmfile)         
+    dcmfile = archivo.name              
     # Get ref file
-    RefDs = pydicom.dcmread(dcmfile)#lstFilesDCM[0]
-    # Load dimensions based on the number of rows, columns, and slices (along the Z axis)
-    #ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), len(lstFilesDCM))
-    ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), 1)
-    # The array is sized based on 'ConstPixelDims'
-    ArrayDicom = np.zeros(ConstPixelDims, dtype=RefDs.pixel_array.dtype)
-    ds = pydicom.dcmread(dcmfile)
-
-    # store the raw image data
-    ArrayDicom[:, :, 0] = ds.pixel_array
-    #print(ds)
-    print(ds.pixel_array) 
-    print(ds.pixel_array.shape)# ds.pixel_array.shape returns the shape of a NumPy ndarray
+    ds = pydicom.dcmread(dcmfile) 
     
     imageProcessing(ds)
-    histogram(ds)
+    histogram(ds)  
     
-    img = np.flipud(ArrayDicom[:, :, 0])
-
-    '''#histogram    
-    hist,bins = np.histogram(img,256,[0,256])
-    plt.hist(img.ravel(),256,[0,256])
-    plt.title('Histogram')
-    plt.show()'''
+    apply_function.configure(command=convolution(ds, gaussian_kernel))
+    '''
+    if fil == 'Gaussian Filter':
+        print("gaussian")
+        convolution(ds, gaussian_kernel) '''
 
 def setInfo(header):
     text.delete('1.0', END)
@@ -112,17 +102,39 @@ def imageProcessing(file):
     imag.imshow(np.flipud(file.pixel_array))             
     canvas.draw()        
               
+def convolution(file, kernel): 
+    kernel = gaussian_kernel[0]
+    rows = len(kernel)
+    columns = len(kernel[0])        
+    image = file.pixel_array
+    img = np.array((image.shape))    
 
-'''
-def convolution(imagen, kernel):
-    
-'''
+    for i in range(1, file.Rows-1):
+        for j in range(1, file.Columns-1):
+            summ = 0
+            for k in range(rows): 
+                for l in range(columns):            
+                    n = image[k][l]*kernel[k][l]
+                    print("n",n)
+                    summ += n                       
+                    print("summ",summ)
+            total = summ/gaussian_kernel[1]
+            print(total)    
+            img[i][j] = total
+    plt.imshow(img)                 
+    plt.show()
+
 #button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
 aplicacion.abrirbtn.place(x=50, y=70)
-#cbb 
-
+#cbb filter
+filter_cbb = ttk.Combobox(aplicacion, state="readonly")
+filter_cbb.place(x=180, y=70)
+filter_cbb["values"] = ['Gaussian Filter', 'Rayleigh Filter']
+apply_function = tk.Button(master=back, text="Apply Function")
+apply_function.pack(side="top")
+apply_function.place(x=200, y=90)
 #button to close the app
 aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
