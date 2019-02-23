@@ -58,6 +58,7 @@ def openfile():
         print("Function not found")  
 
     #convolution(ds, gaussian_kernel)
+    convolution(ds, rayleigh_kernel)
 
 def setInfo(header):
     text.delete('1.0', END)
@@ -112,32 +113,26 @@ def convolution(file, kernel):
     columns = len(kernel[0])        
     image = file.pixel_array
     imgAux = image
-    summ = 0
-    print(kernel)    
-    for i in range(file.Rows):
-        for j in range(file.Columns):
-            if i==0 or j==0:
+    summ = 0   
+    for i in range(file.Rows-1):
+        for j in range(file.Columns-1):
+            if i==0 or j==0 or i==511 or j==511:
                 imgAux[i,j] = image[i,j]                
-                continue
-            x = 0
-            y = 0
-            for k in range(i, rows):
-                for l in range(j, columns):
-                    print("for ",k,",",l)
-                    print("for2 ",x,",",y)
-                    summ += (image[k,l]*kernel[x,y])
-                    y = y+1
+                #continue
+            else:
+                x = 0
                 y = 0
-                x = x+1            
-            total = summ/scalar                    
-            imgAux[i,j] = int(total + 0.5)
-    print("imagen")
-    '''
-    for i in range(file.Rows):
-        for j in range(file.Columns):            
-            #print(imgAux[i,j], end=" ")
-        print()
-    '''
+                for k in range(i, rows+i):
+                    for l in range(j, columns+j):
+                        if k==file.Rows or l==file.Columns:
+                            break
+                        else:
+                            summ += (image[k,l]*kernel[x,y])
+                            y = y+1
+                    y = 0
+                    x = x+1            
+                total = summ/scalar                    
+                imgAux[i,j] = int(total + 0.5)    
     plt.imshow(imgAux)                 
     plt.show()
 
