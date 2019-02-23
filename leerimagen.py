@@ -48,14 +48,16 @@ def openfile():
     # Get ref file
     ds = pydicom.dcmread(dcmfile) 
     
-    imageProcessing(ds)
-    histogram(ds)  
-    
-    apply_function.configure(command=convolution(ds, gaussian_kernel))
-    '''
+    imageProcessing(ds)    
+    #histogram(ds)      
+    fil = filter_cbb.get()
     if fil == 'Gaussian Filter':
         print("gaussian")
-        convolution(ds, gaussian_kernel) '''
+        convolution(ds, gaussian_kernel)         
+    else:
+        print("Function not found")  
+
+    #convolution(ds, gaussian_kernel)
 
 def setInfo(header):
     text.delete('1.0', END)
@@ -99,29 +101,44 @@ def imageProcessing(file):
     setInfo(file)    
     plt.set_cmap(plt.gray()) 
     imag = fig.add_subplot(111)    
-    imag.imshow(np.flipud(file.pixel_array))             
-    canvas.draw()        
+    #imag.imshow(np.flipud(file.pixel_array))             
+    imag.imshow(file.pixel_array)
+    canvas.draw()       
               
 def convolution(file, kernel): 
     kernel = gaussian_kernel[0]
+    scalar = gaussian_kernel[1]
     rows = len(kernel)
     columns = len(kernel[0])        
     image = file.pixel_array
-    img = np.array((image.shape))    
-
-    for i in range(1, file.Rows-1):
-        for j in range(1, file.Columns-1):
-            summ = 0
-            for k in range(rows): 
-                for l in range(columns):            
-                    n = image[k][l]*kernel[k][l]
-                    print("n",n)
-                    summ += n                       
-                    print("summ",summ)
-            total = summ/gaussian_kernel[1]
-            print(total)    
-            img[i][j] = total
-    plt.imshow(img)                 
+    imgAux = image
+    summ = 0
+    print(kernel)    
+    for i in range(file.Rows):
+        for j in range(file.Columns):
+            if i==0 or j==0:
+                imgAux[i,j] = image[i,j]                
+                continue
+            x = 0
+            y = 0
+            for k in range(i, rows):
+                for l in range(j, columns):
+                    print("for ",k,",",l)
+                    print("for2 ",x,",",y)
+                    summ += (image[k,l]*kernel[x,y])
+                    y = y+1
+                y = 0
+                x = x+1            
+            total = summ/scalar                    
+            imgAux[i,j] = int(total + 0.5)
+    print("imagen")
+    '''
+    for i in range(file.Rows):
+        for j in range(file.Columns):            
+            #print(imgAux[i,j], end=" ")
+        print()
+    '''
+    plt.imshow(imgAux)                 
     plt.show()
 
 #button to open the image
@@ -132,9 +149,13 @@ aplicacion.abrirbtn.place(x=50, y=70)
 filter_cbb = ttk.Combobox(aplicacion, state="readonly")
 filter_cbb.place(x=180, y=70)
 filter_cbb["values"] = ['Gaussian Filter', 'Rayleigh Filter']
-apply_function = tk.Button(master=back, text="Apply Function")
+apply_function = tk.Button(master=back, text="Apply Function") #, command=apply_filter
 apply_function.pack(side="top")
 apply_function.place(x=200, y=90)
+#button histogram
+histBtn = tk.Button(master=back, text="Histogram") 
+histBtn.pack(side="top")
+histBtn.place(x=350, y=70)
 #button to close the app
 aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
