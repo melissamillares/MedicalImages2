@@ -37,6 +37,7 @@ img = PhotoImage(file='./medical2.png')
 #label title
 aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGE PROCESSING", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.place(x=80, y=10)
+
 #label
 #aplicacion.imagenlbl = tk.Label(master=back, image=img)
 #aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
@@ -46,20 +47,27 @@ def openfile():
     archivo = tk.filedialog.askopenfile() #askdirectory()    
     dcmfile = archivo.name              
     # Get ref file
-    ds = pydicom.dcmread(dcmfile) 
+    d_file = pydicom.dcmread(dcmfile) 
+    #t = type(d_file)
+    #print(t)
+    imageProcessing(d_file) 
+    #convolution(d_file, gaussian_kernel)
+    convolution(d_file, rayleigh_kernel)
     
-    imageProcessing(ds)    
-    #histogram(ds)      
-    fil = filter_cbb.get()
-    if fil == 'Gaussian Filter':
-        print("gaussian")
-        convolution(ds, gaussian_kernel)         
+    #histogram(ds) 
+    return d_file     
+'''
+def apply_filter():
+    file = openfile() #se abre el dir de nuevo :'v
+    fil = filter_cbb.get()    
+    if fil == 'Gaussian Filter':        
+        convolution(file, gaussian_kernel)         
+    elif fil == 'Rayleigh Filter':
+        print("Rayleigh")
+        convolution(ds, rayleigh_kernel)
     else:
         print("Function not found")  
-
-    #convolution(ds, gaussian_kernel)
-    convolution(ds, rayleigh_kernel)
-
+'''
 def setInfo(header):
     text.delete('1.0', END)
     text.config(state=NORMAL) 
@@ -108,45 +116,58 @@ def imageProcessing(file):
               
 def convolution(file, kernel): 
     kernel = gaussian_kernel[0]
-    scalar = gaussian_kernel[1]
-    rows = len(kernel)
-    columns = len(kernel[0])        
+    scalar = gaussian_kernel[1]     
+    image_rows = file.Rows 
+    image_columns = file.Columns      
     image = file.pixel_array
-    imgAux = image
+    imgAux = np.ndarray((image_rows,image_columns), np.int64)
     summ = 0   
-    for i in range(file.Rows-1):
-        for j in range(file.Columns-1):
-            if i==0 or j==0 or i==511 or j==511:
+    for i in range(0,image_rows):
+        for j in range(0,image_columns):
+            if i==0 or j==0 or i==image_rows-1 or j==image_columns-1:
                 imgAux[i,j] = image[i,j]                
-                #continue
-            else:
-                x = 0
+                continue            
+            x = 0
+            y = 0
+            summ = 0
+            for k in range(i-1, i+1+1):
+                for l in range(j-1, j+1+1):
+                    summ += (image[k,l]*kernel[x,y])
+                    y = y+1
                 y = 0
-                for k in range(i, rows+i):
-                    for l in range(j, columns+j):
-                        if k==file.Rows or l==file.Columns:
-                            break
-                        else:
-                            summ += (image[k,l]*kernel[x,y])
-                            y = y+1
-                    y = 0
-                    x = x+1            
-                total = summ/scalar                    
-                imgAux[i,j] = int(total + 0.5)    
+                x = x+1            
+            total = summ/scalar                    
+            imgAux[i,j] = np.int64(total + 0.5)
     plt.imshow(imgAux)                 
     plt.show()
 
+def otsu_thresholding():
+    print()
+
+def sobel_filter(file, kernel_x, kernel_y):
+    image_rows = file.Rows 
+    image_columns = file.Columns 
+    image = file.pixel_array
+    magnitude_matrix = np.ndarray((image_rows,image_columns), np.int64)
+'''
+    for i in range():
+        for j in range():
+            if i==0 or j==0 or i==imagse_rows-1 or j==image_columns-1:
+                magnitude_matrix[i,j] = 0                
+                continue
+'''
 #button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
 aplicacion.abrirbtn.place(x=50, y=70)
 #cbb filter
 filter_cbb = ttk.Combobox(aplicacion, state="readonly")
-filter_cbb.place(x=180, y=70)
+filter_cbb.place(x=170, y=70)
 filter_cbb["values"] = ['Gaussian Filter', 'Rayleigh Filter']
-apply_function = tk.Button(master=back, text="Apply Function") #, command=apply_filter
+filter_cbb.set('Gaussian Filter')
+apply_function = tk.Button(master=back, text="Apply Function")#, command=apply_filter)
 apply_function.pack(side="top")
-apply_function.place(x=200, y=90)
+apply_function.place(x=190, y=90)
 #button histogram
 histBtn = tk.Button(master=back, text="Histogram") 
 histBtn.pack(side="top")
