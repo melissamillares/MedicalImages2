@@ -26,6 +26,8 @@ canvas = FigureCanvasTkAgg(fig, master=aplicacion)
 
 gaussian_kernel = Gaussian.get_gaussian_filter()
 rayleigh_kernel = Gaussian.get_rayleigh_filter()
+gradient_x_kernel = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])
+gradient_x_kernel = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
 
 title = 'medical image processing'
 back = tk.Frame(master=aplicacion,bg='#177497')
@@ -38,10 +40,6 @@ img = PhotoImage(file='./medical2.png')
 aplicacion.titulolbl = tk.Label(master=back, text="MEDICAL IMAGE PROCESSING", anchor="center", font=("Ubuntu", 28), bg='#177497')
 aplicacion.titulolbl.place(x=80, y=10)
 
-#label
-#aplicacion.imagenlbl = tk.Label(master=back, image=img)
-#aplicacion.imagenlbl.grid(row=1, column=0, columnspan=2, rowspan=2, padx=10, pady=10, sticky=(N, S, E, W))
-
 #function to choose the image 
 def openfile():   
     archivo = tk.filedialog.askopenfile() #askdirectory()    
@@ -51,10 +49,8 @@ def openfile():
     #t = type(d_file)
     #print(t)
     imageProcessing(d_file) 
-    #convolution(d_file, gaussian_kernel)
-    convolution(d_file, rayleigh_kernel)
-    
-    #histogram(ds) 
+    #convolution(d_file, gaussian_kernel)    
+    otsu_thresholding(histogram(d_file))
     return d_file     
 '''
 def apply_filter():
@@ -141,10 +137,39 @@ def convolution(file, kernel):
     plt.imshow(imgAux)                 
     plt.show()
 
-def otsu_thresholding():
-    print()
+def otsu_thresholding(histogram):
+    weight_back = 0
+    weight_foreg = 0
+    mean_back = 0
+    mean_foreg = 0
+    threshold = 0
+    summ = 0
+    sum_back = 0
+    var_max = 0
+    var_between = 0
+    total = sum(histogram)
+    print(total)
+    for t in histogram:
+        summ += t * histogram[t]
+    
+    for t in histogram:
+        weight_back += histogram[t]
+        if weight_back == 0:
+            continue        
+        weight_foreg = total - weight_back
+        if weight_foreg == 0:
+            break
+        sum_back += t*histogram[t]
+        mean_back = sum_back/weight_back
+        mean_foreg = (summ - sum_back)/weight_foreg
+        var_between = weight_back * weight_foreg * (mean_back - mean_foreg) * (mean_back - mean_foreg)    
+        if var_between > var_max:
+            var_max = var_between
+            threshold = t
+    return threshold
 
 def sobel_filter(file, kernel_x, kernel_y):
+    convolution(file, rayleigh_kernel)
     image_rows = file.Rows 
     image_columns = file.Columns 
     image = file.pixel_array
@@ -156,6 +181,10 @@ def sobel_filter(file, kernel_x, kernel_y):
                 magnitude_matrix[i,j] = 0                
                 continue
 '''
+
+def magnitude_gradient():
+    print("gradiente")
+
 #button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
