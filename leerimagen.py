@@ -27,7 +27,7 @@ canvas = FigureCanvasTkAgg(fig, master=aplicacion)
 gaussian_kernel = Gaussian.get_gaussian_filter()
 rayleigh_kernel = Gaussian.get_rayleigh_filter()
 gradient_x_kernel = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])
-gradient_x_kernel = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
+gradient_y_kernel = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
 
 title = 'medical image processing'
 back = tk.Frame(master=aplicacion,bg='#177497')
@@ -46,12 +46,14 @@ def openfile():
     dcmfile = archivo.name              
     # Get ref file
     d_file = pydicom.dcmread(dcmfile) 
-    #t = type(d_file)
-    #print(t)
+    image = d_file.pixel_array
+
     imageProcessing(d_file) 
-    #convolution(d_file, gaussian_kernel)    
-    otsu_thresholding(histogram(d_file))
-    return d_file     
+    filtr = convolution(image, gaussian_kernel)   
+    h = histogram(filtr) 
+    #o = otsu_thresholding(h)  
+    #sobel_filter(image, gradient_x_kernel, gradient_y_kernel, o)  
+    #return d_file     
 '''
 def apply_filter():
     file = openfile() #se abre el dir de nuevo :'v
@@ -86,20 +88,20 @@ def setInfo(header):
     text.config(state=DISABLED)
     
 def histogram(file):    
-    rows = int(file.Rows)
-    columns = int(file.Columns)
-    pixelArray = file.pixel_array    
+    rows = np.size(file,1)
+    columns = np.size(file,0)  
     array = [0]*65536
     
     for i in range(rows):
         for j in range(columns):
-            array[pixelArray[i,j]]=array[pixelArray[i,j]]+1
+            array[file[i,j]]=array[file[i,j]]+1
             
     array = np.asarray(array)
     plt.plot(array)
     fig = plt.gcf()
     fig.canvas.set_window_title('Histogram')           
-    plt.show()  
+    #plt.show()
+    return array
 
 def imageProcessing(file):     
     text_frame.pack()  
@@ -113,29 +115,30 @@ def imageProcessing(file):
 def convolution(file, kernel): 
     kernel = gaussian_kernel[0]
     scalar = gaussian_kernel[1]     
-    image_rows = file.Rows 
-    image_columns = file.Columns      
-    image = file.pixel_array
+    image_rows = np.size(file,1) 
+    image_columns = np.size(file,0)          
     imgAux = np.ndarray((image_rows,image_columns), np.int64)
     summ = 0   
     for i in range(0,image_rows):
         for j in range(0,image_columns):
             if i==0 or j==0 or i==image_rows-1 or j==image_columns-1:
-                imgAux[i,j] = image[i,j]                
+                imgAux[i,j] = file[i,j]                
                 continue            
-            x = 0
-            y = 0
+            x = 0 #iterator for kernel
+            y = 0 #iterator for kernel
             summ = 0
             for k in range(i-1, i+1+1):
                 for l in range(j-1, j+1+1):
-                    summ += (image[k,l]*kernel[x,y])
+                    summ += (file[k,l]*kernel[x,y])
                     y = y+1
                 y = 0
                 x = x+1            
             total = summ/scalar                    
             imgAux[i,j] = np.int64(total + 0.5)
     plt.imshow(imgAux)                 
-    plt.show()
+    #plt.show()
+    return imgAux
+
 
 def otsu_thresholding(histogram):
     weight_back = 0
@@ -147,8 +150,7 @@ def otsu_thresholding(histogram):
     sum_back = 0
     var_max = 0
     var_between = 0
-    total = sum(histogram)
-    print(total)
+    total = sum(histogram)    
     for t in histogram:
         summ += t * histogram[t]
     
@@ -168,19 +170,46 @@ def otsu_thresholding(histogram):
             threshold = t
     return threshold
 
-def sobel_filter(file, kernel_x, kernel_y):
-    convolution(file, rayleigh_kernel)
-    image_rows = file.Rows 
-    image_columns = file.Columns 
-    image = file.pixel_array
-    magnitude_matrix = np.ndarray((image_rows,image_columns), np.int64)
-'''
-    for i in range():
-        for j in range():
-            if i==0 or j==0 or i==imagse_rows-1 or j==image_columns-1:
+
+def sobel_filter(file, kernel_x, kernel_y, threshold):
+    gaussian_filter = convolution(file, gaussian_kernel)
+    image_rows = np.size(file,1) 
+    image_columns = np.size(file,0)   
+    image_aux = np.zeros((image_rows,image_columns), np.int64)  
+    magnitude_matrix = np.zeros((image_rows,image_columns), np.int64)
+    gradient_x = np.zeros((image_rows,image_columns), np.int64)
+    gradient_y = np.zeros((image_rows,image_columns), np.int64)
+    aux_x = 0
+    aux_y = 0
+    for i in range(image_rows):
+        for j in range(image_columns):
+            if i==0 or j==0 or i==image_rows-1 or j==image_columns-1:
                 magnitude_matrix[i,j] = 0                
                 continue
-'''
+            x = 0 #iterator for kernel
+            y = 0 #iterator for kernel
+            aux_x = 0
+            aux_y = 0
+            for k in range(i-1, i+1+1):
+                for l in range(j-1, j+1+1):
+                    aux_x += gaussian_filter[k,l]*kernel_x[x,y]
+                    aux_y += gaussian_filter[k,l]*kernel_y[x,y]
+                y = 0
+                x = x+1 
+                gradient_x[i,j] = np.int64(aux_x + 0.5)
+                gradient_y[i,j] = np.int64(aux_y + 0.5)                
+            magnitude_matrix[i,j] = abs(gradient_x[i,j]) + abs(gradient_y[i,j])
+            # if value after gaussian is bigger than threshold = 0
+            # if smaller than threshold = 2¹⁶
+            for i in range(image_rows):
+                for j in range(image_columns):
+                    if gaussian_filter[i,j] > threshold :
+                        image_aux[i,j] = 0
+                    elif gaussian_filter[i,j] < threshold:
+                        image_aux[i,j] = 2**16
+    plt.imshow(image_aux)                 
+    plt.show()
+
 
 def magnitude_gradient():
     print("gradiente")
