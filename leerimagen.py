@@ -10,6 +10,7 @@ import math
 
 from tkinter import *
 from tkinter import ttk 
+from tkinter import messagebox
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -50,45 +51,10 @@ def openfile():
     dcmfile = archivo.name              
     # Get ref file
     d_file = pydicom.dcmread(dcmfile) 
-    image = d_file.pixel_array
+    global image
+    image = d_file.pixel_array    
 
-    imageProcessing(d_file) 
-    # original image histogram
-    #oih = histogram(image)
-    '''
-    #button histogram
-    histBtn = tk.Button(master=back, text="Histogram", command=oih)
-    histBtn.pack(side="top")
-    histBtn.place(x=350, y=70)
-    '''
-    # image with filter
-    #apply_filter(image)
-    '''
-    # button apply_function
-    apply_function = tk.Button(master=back, text="Apply Function", command=filtr)
-    apply_function.pack(side="top")
-    apply_function.place(x=190, y=90)    
-    '''
-    # image with filter
-    filtr = convolution(image, gaussian_kernel, gaussian_scalar) 
-
-    # image histogram with filter 
-    h = histogram(filtr)     
-    sobel_filter(image, gradient_x_kernel, gradient_y_kernel)  
-    #return d_file     
-
-def apply_filter(image):    
-    fil = filter_cbb.get()    
-    if fil == 'Gaussian Filter':  
-        print("Gaussian")      
-        return convolution(image, gaussian_kernel, gaussian_scalar)         
-    elif fil == 'Rayleigh Filter':
-        print("Rayleigh")
-        return convolution(image, rayleigh_kernel, rayleigh_scalar)
-    else:
-        print("Function not found")
-        strg = "Function not found"
-        return strg  
+    imageProcessing(d_file)                
 
 def setInfo(header):
     text.delete('1.0', END)
@@ -111,14 +77,14 @@ def setInfo(header):
     text.insert('1.0', info)
     text.config(state=DISABLED)
     
-def histogram(file):    
-    rows = np.size(file,1)
-    columns = np.size(file,0)  
+def histogram():    
+    rows = np.size(image,1)
+    columns = np.size(image,0)  
     array = [0]*65536
     
     for i in range(rows):
         for j in range(columns):
-            array[file[i,j]]=array[file[i,j]]+1
+            array[image[i,j]]=array[image[i,j]]+1
             
     array = np.asarray(array)
     plt.plot(array)
@@ -130,13 +96,18 @@ def histogram(file):
 def imageProcessing(file):     
     text_frame.pack()  
     setInfo(file)    
-    plt.set_cmap(plt.gray()) 
+    # hacer una copia de la imagen y a esa aplicarle el plt.gray
+    image_rows = file.Rows
+    image_columns = file.Columns          
+    imgAux = np.ndarray((image_rows,image_columns), np.int64)
+    imgAux = file.pixel_array
+    #plt.set_cmap(plt.gray()) 
     imag = fig.add_subplot(121)    
     #imag.imshow(np.flipud(file.pixel_array))             
-    imag.imshow(file.pixel_array)
+    imag.imshow(imgAux, cmap=plt.cm.gray)
     canvas.draw()       
               
-def convolution(image, kernel, scalar):   
+def convolution(kernel, scalar):   
     image_rows = np.size(image,1) 
     image_columns = np.size(image,0)          
     imgAux = np.ndarray((image_rows,image_columns), np.int64)
@@ -160,10 +131,54 @@ def convolution(image, kernel, scalar):
             imgAux[i,j] = np.int64(total + 0.5)
     #plt.set_cmap(plt.gray())
     imag = fig.add_subplot(122)
-    imag.imshow(imgAux)
+    imag.imshow(imgAux, cmap=plt.cm.gray)
     canvas.draw()
-
     return imgAux
+
+# median filter
+# n: kernel size
+def medianFilter(n = 1):		
+    size_kern = (2*n)+1
+    size_array = size_kern**2
+    image_rows = np.size(image,1) 
+    image_columns = np.size(image,0)
+    img_aux = np.ndarray((image_rows,image_columns), np.int64)
+	
+    for i in range(image_rows):
+	    for j in range(image_columns):
+		    if i<n or i>((image_rows-1)-n) or j<n or j>((image_columns-1)-n):
+			    img_aux[i,j]=0
+		    else:
+			    array =[]*size_array
+
+			    for x in range(i-n,i+n+1):
+				    for y in range(j-n,j+n+1):
+					    array.append(img_aux[x][y])
+
+			    array = sorted(array) # for ordering
+			    mid = int((len(array)-1)/2)
+			    img_aux[i,j] = array[mid]
+
+    plt.imshow(img_aux, cmap=plt.cm.gray)
+    plt.show()
+
+    return img_aux
+
+# function to apply the filters
+def apply_filter():    
+    fil = filter_cbb.get()    
+    if fil == 'Gaussian Filter':               
+        messagebox.showinfo(message="Applying Gaussian Filter...\n\nPlease wait", title="Applying Filter")         
+        return convolution(gaussian_kernel, gaussian_scalar)         
+    elif fil == 'Rayleigh Filter':        
+        messagebox.showinfo(message="Applying Rayleigh Filter...\n\nPlease wait", title="Applying Filter")         
+        return convolution(rayleigh_kernel, rayleigh_scalar)
+    elif fil == 'Sobel Filter':
+        messagebox.showinfo(message="Applying Sobel Filter...\n\nPlease wait", title="Applying Filter")         
+        return sobel_filter(gradient_x_kernel, gradient_y_kernel)
+    else:        
+        strg = "Function not found"
+        return strg  
 
 # otsu thresholding function
 def otsu_thresholding(histogram):
@@ -197,90 +212,104 @@ def otsu_thresholding(histogram):
     return threshold
 
 # sobel filter for borders
-def sobel_filter(image, kernel_x, kernel_y):    
+def sobel_filter(kernel_x, kernel_y):    
     image_rows = np.size(image,1) 
     image_columns = np.size(image,0)       
     magnitude_matrix = np.ndarray((image_rows,image_columns), np.int64)
-    magnitude_matrix = convolution(image, gaussian_kernel, gaussian_scalar)
+    magnitude_matrix = convolution(gaussian_kernel, gaussian_scalar)
     gradient_x = kernel_x
     gradient_y = kernel_y
       
-    aux_x = convolution(image, gradient_x, 1)
-    aux_y = convolution(image, gradient_y, 1)
+    aux_x = convolution(gradient_x, 1)
+    aux_y = convolution(gradient_y, 1)
     magnitude_matrix = abs(aux_x) + abs(aux_y)
              
     imag = fig.add_subplot(122)
-    imag.imshow(magnitude_matrix)
-    canvas.draw()
+    imag.imshow(magnitude_matrix, cmap=plt.cm.gray)
+    canvas.draw()    
 
     return magnitude_matrix
-'''
+
 # k-means function
-# @arguments: k number of clusters (k centroids)
-def defineCentroid(k):
-    contador=0
-
-    centroides= ds.pixel_array.copy()
-
-    cn = []
-
+# k number of clusters (k centroids)
+def define_centroids(k):
+    image_rows = np.size(image,1) 
+    image_columns = np.size(image,0)
+    aux = 0
+    centroids = np.ndarray((image_rows,image_columns), np.int64)
+    cn = []        
     for i in range(k):
         cn.append(int(255/k)*i)
-
     
-    while(contador<2):
-        arrayCn = []
-        
+    while(aux < 2):
+        arrayCn = []        
         for n in range(k):
             arrayCn.append([])
-        for i in range(rows):
-            for j in range(columns):
-                distancias=[]
+        for i in range(image_rows):
+            for j in range(image_columns):
+                distances = []
                 for n in range(k):
-                    distancias.append(fabs(cn[n]-ds.pixel_array[i][j]))
-
-                index=distancias.index(np.amin(distancias))
-                arrayCn[index].append(ds.pixel_array[i][j])
-
-                centroides[i][j]=index*int(255/k)
+                    distances.append(math.fabs(cn[n]- image[i][j]))
+                index = distances.index(np.amin(distances))
+                arrayCn[index].append(image[i][j])
+                centroids[i][j] = index*int(255/k)
             #print("row: " + str(i)+" columns: "+str(j))
-
-        iguales=True                
+        equals = True                
         for n in range(k):
-            if(cn[n]!=int(np.mean(arrayCn[n]))):
-                cn[n]=int(np.mean(arrayCn[n]))
-                iguales=False
-        
-        if(iguales):
-            contador+=1
+            if(cn[n] != int(np.mean(arrayCn[n]))):
+                cn[n] = int(np.mean(arrayCn[n]))
+                equals = False 
 
-    return centroides
+        if(equals):
+            aux += 1
+
+    return centroids
 
 def kmeans():
-	copia = ds.pixel_array.copy()
+    messagebox.showinfo(message="Calculating K-means", title="K-means")
 
-	centroides = numCents.get()
-	centroides = int(centroides)
+    img_aux = image
+    centroids = centroids_cbb.get()
+    print(centroids)
+    centroids = int(centroids)
+    img_aux = define_centroids(centroids) 
+    
+    imag = fig.add_subplot(122)    
+    imag.imshow(img_aux)
+    canvas.draw()    
 
-	copia = definirCentroides(centroides)
-	
-	plt.imshow(copia)
-plt.show()
-'''
+    return img_aux	
 
 # button to open the image
 aplicacion.abrirbtn = tk.Button(master=back, text="Open image", command=openfile)
 aplicacion.abrirbtn.pack(side="top")
-aplicacion.abrirbtn.place(x=50, y=70)
+aplicacion.abrirbtn.place(x=50, y=63)
 # cbb filter
 filter_cbb = ttk.Combobox(aplicacion, state="readonly")
-filter_cbb.place(x=170, y=70)
-filter_cbb["values"] = ['Gaussian Filter', 'Rayleigh Filter']
+filter_cbb.place(x=170, y=68)
+filter_cbb["values"] = ['Gaussian Filter', 'Rayleigh Filter', 'Sobel Filter']
 filter_cbb.set('Gaussian Filter')
+# button to apply filter
+filter_btn = tk.Button(master=back, text="Apply Filter", command=apply_filter)
+filter_btn.pack(side="top")
+filter_btn.place(x=350, y=63)
+# button histogram
+hist_btn = tk.Button(master=back, text="Histogram", command=histogram)
+hist_btn.pack(side="top")
+hist_btn.place(x=54, y=93)
 #button to close the app
 aplicacion.quit = tk.Button(master=back, text="Exit", fg="red", command=aplicacion.destroy)
 aplicacion.quit.pack(side="top")
-aplicacion.quit.place(x=500, y=70)
+aplicacion.quit.place(x=500, y=63)
+# cbb number or centroids
+centroids_cbb = ttk.Combobox(aplicacion, state="readonly")
+centroids_cbb.place(x=170, y=98)
+centroids_cbb["values"] = ['2', '3', '4', '5']
+centroids_cbb.set('2')
+# button to apply k-means
+kmeans_btn = tk.Button(master=back, text="Apply K-means", command=kmeans)
+kmeans_btn.pack(side="top")
+kmeans_btn.place(x=347, y=93)
 
 canvas.get_tk_widget().pack()
 
